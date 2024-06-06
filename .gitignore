@@ -1,0 +1,18 @@
+# IDE project folders
+.idea/
+.vscode/
+
+# General files
+*.pyc
+
+# Django
+migrations/
+static/
+media
+
+# Environment files
+.env
+envs
+
+# Log files
+*log
