@@ -1,11 +1,23 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
 from config import settings
 
 
+class CustomUserManager(UserManager):
+
+    def create_superuser(self, email=None, password=None, **extra_fields):
+        # overriding this to create superuser with email.
+        # Since USERNAME_FIELD is pointing to "email", createsuperuser will raise error since
+        # create_superuser method requires username as positional argument.
+        username = email.split('@')[0]
+        return super().create_superuser(username, email, password, **extra_fields)
+
+
 class User(AbstractUser):
     email = models.EmailField("email address", blank=True, unique=True)
+
+    objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

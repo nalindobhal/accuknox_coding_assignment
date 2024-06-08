@@ -1,3 +1,4 @@
+import logging
 from django.contrib.auth import authenticate, login
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view
@@ -9,6 +10,9 @@ from apps.base.views import ErrorJsonResponse, SuccessJsonResponse
 from apps.user.serializers import UserSerializer
 
 
+logger = logging.getLogger(__name__)
+
+
 @api_view(['POST'])
 def login_view(request):
     """
@@ -17,6 +21,7 @@ def login_view(request):
     try:
         req = LoginRequestValidator(data=request.data)
         if not req.is_valid():
+            logger.error(f"login_view errors: {req.errors}")
             return ErrorJsonResponse(data={
                 "status": "error",
                 "message": req.errors
@@ -30,6 +35,7 @@ def login_view(request):
                 "user": UserSerializer(instance=user).data
             })
         else:
+            logger.error(f"login_view login failed: user: {user}")
             return ErrorJsonResponse(data={
                 "status": "error",
                 "message": "Cannot login, contact admin"
