@@ -1,0 +1,16 @@
+version: '3.3'
+
+services:
+
+    accuknox_coding_assignment:
+      build:
+        context: .
+      container_name: django_accuknox_coding_assignment
+      command: python manage.py runserver 0.0.0.0:8000
+      volumes:
+        - .:/app
+      ports:
+        - "8000:8000"
+      env_file:
+        - .env
+
