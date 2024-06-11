@@ -16,3 +16,4 @@ envs
 
 # Log files
 *log
+*.sqlite3

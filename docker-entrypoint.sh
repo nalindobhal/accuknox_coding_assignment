@@ -4,6 +4,8 @@ echo "${0}: Running makemigrations"
 python manage.py makemigrations
 echo "${0}: Running migrate"
 python manage.py migrate
+echo "${0}: Creating Cache table"
+python manage.py createcachetable
 
 echo "${0}: Collecting static files."
 python manage.py collectstatic --no-input --clear

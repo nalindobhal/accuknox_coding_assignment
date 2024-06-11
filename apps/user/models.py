@@ -46,7 +46,7 @@ class FriendRequest(models.Model):
     class Meta:
         db_table = 'friend_request'
         constraints = [
-            models.UniqueConstraint(fields=['sent_by', 'sent_to'], name='unique_friend_request_constraint')
+            models.UniqueConstraint(fields=['sent_by', 'sent_to', 'status'], name='unique_friend_request_constraint')
         ]
 
     def __str__(self):

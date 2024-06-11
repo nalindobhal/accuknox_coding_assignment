@@ -3,14 +3,14 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 
 from apps.auth.decorators import user_login_required
 from apps.base.views import SuccessJsonResponse, ErrorJsonResponse
 from apps.user.models import Friends, FriendRequest
+from apps.user.throttling import SendFriendRequestThrottling
 
 User = get_user_model()
-
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def get_friends_list(request):
 @user_login_required
 def get_friends_request_list(request):
     """
-    return list of friends for current loggeed in user
+    return list of friends for current logged-in user
     """
     friend_request_qs = FriendRequest.objects.select_related('sent_by').filter(
         sent_to=request.user, status__isnull=True
@@ -62,6 +62,7 @@ def get_friends_request_list(request):
 
 
 @api_view(["POST"])
+@throttle_classes([SendFriendRequestThrottling])
 @user_login_required
 def send_friend_request(request):
     """
@@ -84,7 +85,7 @@ def send_friend_request(request):
     if FriendRequest.objects.filter(
             Q(sent_by=request.user, sent_to=other_user) |
             Q(sent_by=other_user, sent_to__email=request.user.email)
-    ).exists():
+    ).filter(status__isnull=True).exists():
         # either current user or other user already created a friend request
         logger.info("send_friend_request, Friend Request object already exists")
         return ErrorJsonResponse({"message": "Friend Request already exists"})
@@ -110,9 +111,10 @@ def accept_friend_request(request):
         return ErrorJsonResponse({"message": "Invalid Operation"})
 
     try:
-        friend_request_obj = FriendRequest.objects.get(
-            sent_to=request.user, sent_by__email=friend_email
-        )
+        friend_request_obj = FriendRequest.objects.filter(
+            Q(sent_by=request.user, sent_to__email=friend_email) |
+            Q(sent_by__email=friend_email, sent_to__email=request.user.email)
+        ).latest('id')
 
     except FriendRequest.DoesNotExist as _:
         return ErrorJsonResponse({"message": "Friend Request does not exists"})
@@ -134,14 +136,16 @@ def reject_friend_request(request):
     friend_email = request.data.get('email')
 
     if friend_email and friend_email == request.user.email:
-        logger.warning("accept_friend_request, attempting to send friend request to themselves")
+        logger.warning("reject_friend_request, attempting to send friend request to themselves")
         return ErrorJsonResponse({"message": "Invalid Operation"})
 
     try:
-        friend_request_obj = FriendRequest.objects.get(
-            sent_to=request.user, sent_by__email=friend_email
-        )
+        friend_request_obj = FriendRequest.objects.filter(
+            Q(sent_by=request.user, sent_to__email=friend_email) |
+            Q(sent_by__email=friend_email, sent_to__email=request.user.email)
+        ).latest('id')
     except FriendRequest.DoesNotExist as _:
+        logger.warning(f"reject_friend_request, User with email {friend_email} not found")
         return ErrorJsonResponse({"message": "Friend Request does not exists"})
 
     if friend_request_obj.status is not None:

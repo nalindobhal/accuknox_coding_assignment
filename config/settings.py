@@ -75,6 +75,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# CACHES, using the DB based caching
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "accuknox_cache_table",
+    }
+}
+
+
 # Database
 
 # using default sqlite db
